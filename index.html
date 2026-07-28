@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>趋势策略优化版 · Streamlit</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #5c6670;
+      --accent: #2ca02c;
+      --line: #e2e6ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+      background: linear-gradient(160deg, #eef5ee 0%, var(--bg) 45%, #e8eef5 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 28px 28px 22px;
+      box-shadow: 0 10px 30px rgba(20, 40, 60, 0.06);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.65rem;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    a.btn {
+      display: inline-block;
+      text-decoration: none;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    a.btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    a.btn-primary:hover { filter: brightness(0.95); }
+    a.btn-ghost {
+      background: #f7f9fb;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    .url {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      background: #f7f9fb;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #334;
+    }
+    .meta {
+      margin-top: 18px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .frame-wrap {
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      height: min(78vh, 900px);
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    @media (max-width: 720px) {
+      .frame-wrap { height: 70vh; }
+      h1 { font-size: 1.35rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>趋势策略优化版</h1>
+      <p class="sub">
+        Regime 关空 · 空头对称滤网 · 全市场 3×ATR 熔断 · 涨跌停开 · 手续费 1.5bp<br />
+        预计算展示页（Streamlit Cloud）
+      </p>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="https://trendoptapp-wc8karhp8e9bvmttm3tud7.streamlit.app/" target="_blank" rel="noopener noreferrer">
+          打开应用
+        </a>
+        <a class="btn btn-ghost" href="https://trendoptapp-wc8karhp8e9bvmttm3tud7.streamlit.app/" target="_blank" rel="noopener noreferrer">
+          新窗口全屏
+        </a>
+      </div>
+
+      <div class="url">https://trendoptapp-wc8karhp8e9bvmttm3tud7.streamlit.app/</div>
+
+      <p class="meta">
+        若下方内嵌空白，请点「打开应用」。部分浏览器会拦截第三方 Cookie，导致 iframe 内 Streamlit 无法登录/加载。
+      </p>
+    </div>
+
+    <div class="frame-wrap">
+      <iframe
+        title="趋势策略优化版 Streamlit"
+        src="https://trendoptapp-wc8karhp8e9bvmttm3tud7.streamlit.app/?embedded=true"
+        allow="clipboard-read; clipboard-write"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "tag": "2026",
+  "start": "2026-01-05",
+  "end": "2026-07-27",
+  "mode": "independent",
+  "metrics": {
+    "tot_pct": 22.164022981139887,
+    "ann_pct": 43.36189830861703,
+    "sharpe": 1.8935287031718329,
+    "dd_pct": -7.301218331831095,
+    "calmar": 5.938994882480411,
+    "win_rate": 0.5514705882352942,
+    "final": 1.2216402298113989,
+    "days": 137
+  },
+  "avg_long_exposure": 0.5567942527039746,
+  "avg_short_exposure": 0.39799427486198025,
+  "avg_daily_holdings": 5.175182481751825,
+  "avg_hold_days": 3.356807511737089,
+  "lb_stats": {
+    "buy_blocked": 10,
+    "sell_blocked": 0
+  }
+}

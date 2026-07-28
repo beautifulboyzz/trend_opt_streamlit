@@ -1,0 +1,24 @@
+{
+  "tag": "2020",
+  "start": "2020-01-02",
+  "end": "2020-12-31",
+  "mode": "independent",
+  "metrics": {
+    "tot_pct": 62.80264512225835,
+    "ann_pct": 63.07534882581245,
+    "sharpe": 3.1568320697820753,
+    "dd_pct": -5.717733368843081,
+    "calmar": 11.031530286025744,
+    "win_rate": 0.5578512396694215,
+    "final": 1.6280264512225835,
+    "days": 243
+  },
+  "avg_long_exposure": 0.5746482177264554,
+  "avg_short_exposure": 0.42146776406035663,
+  "avg_daily_holdings": 5.255144032921811,
+  "avg_hold_days": 4.451388888888889,
+  "lb_stats": {
+    "buy_blocked": 1,
+    "sell_blocked": 1
+  }
+}

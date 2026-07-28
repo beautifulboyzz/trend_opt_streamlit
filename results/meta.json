@@ -42,5 +42,15 @@
     "sell_blocked": 26
   },
   "bench_name": "文华商品",
-  "exported_at": "2026-07-28T14:28:40"
+  "metric_note": "全样本为连续回测；results/independent/{年}/ 为各年独立回测（对齐本地改开始日期）",
+  "independent_years": [
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+  ],
+  "exported_at": "2026-07-28T14:37:52"
 }

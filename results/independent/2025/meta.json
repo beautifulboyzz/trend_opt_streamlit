@@ -1,0 +1,24 @@
+{
+  "tag": "2025",
+  "start": "2025-01-02",
+  "end": "2025-12-31",
+  "mode": "independent",
+  "metrics": {
+    "tot_pct": 18.70192342703203,
+    "ann_pct": 18.82813235005305,
+    "sharpe": 1.3772485366473461,
+    "dd_pct": -7.393689083847121,
+    "calmar": 2.546513944058938,
+    "win_rate": 0.5330578512396694,
+    "final": 1.1870192342703203,
+    "days": 243
+  },
+  "avg_long_exposure": 0.5552197181498117,
+  "avg_short_exposure": 0.44673420894402915,
+  "avg_daily_holdings": 6.366255144032922,
+  "avg_hold_days": 4.158176943699732,
+  "lb_stats": {
+    "buy_blocked": 5,
+    "sell_blocked": 8
+  }
+}

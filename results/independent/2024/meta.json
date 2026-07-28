@@ -1,0 +1,24 @@
+{
+  "tag": "2024",
+  "start": "2024-01-02",
+  "end": "2024-12-31",
+  "mode": "independent",
+  "metrics": {
+    "tot_pct": 22.94851431687286,
+    "ann_pct": 23.035772634813444,
+    "sharpe": 1.60284654387711,
+    "dd_pct": -5.353562633577058,
+    "calmar": 4.302886547050963,
+    "win_rate": 0.5583333333333333,
+    "final": 1.2294851431687286,
+    "days": 241
+  },
+  "avg_long_exposure": 0.5097902329406375,
+  "avg_short_exposure": 0.4896265560165975,
+  "avg_daily_holdings": 5.726141078838174,
+  "avg_hold_days": 3.9713467048710602,
+  "lb_stats": {
+    "buy_blocked": 1,
+    "sell_blocked": 3
+  }
+}

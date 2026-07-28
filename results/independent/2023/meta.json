@@ -1,0 +1,24 @@
+{
+  "tag": "2023",
+  "start": "2023-01-03",
+  "end": "2023-12-29",
+  "mode": "independent",
+  "metrics": {
+    "tot_pct": 40.30088384535038,
+    "ann_pct": 40.99543049132366,
+    "sharpe": 2.0713363037824757,
+    "dd_pct": -7.568319095461462,
+    "calmar": 5.416715386103055,
+    "win_rate": 0.5394190871369294,
+    "final": 1.4030088384535038,
+    "days": 242
+  },
+  "avg_long_exposure": 0.56323708738367,
+  "avg_short_exposure": 0.4351144280910187,
+  "avg_daily_holdings": 5.355371900826446,
+  "avg_hold_days": 4.4862068965517246,
+  "lb_stats": {
+    "buy_blocked": 10,
+    "sell_blocked": 0
+  }
+}

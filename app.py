@@ -73,10 +73,49 @@ def load_bundle():
     contrib = pd.read_csv(RESULTS / "contrib.csv") if (RESULTS / "contrib.csv").exists() else None
     waves = pd.read_csv(RESULTS / "waves.csv") if (RESULTS / "waves.csv").exists() else None
     log = (RESULTS / "log.txt").read_text(encoding="utf-8") if (RESULTS / "log.txt").exists() else ""
+    ind_index = []
+    ind_path = RESULTS / "independent" / "index.json"
+    if ind_path.exists():
+        ind_index = json.loads(ind_path.read_text(encoding="utf-8"))
     return {
         "meta": meta, "nav": nav, "daily": daily, "weekly": weekly,
         "yearly": yearly, "contrib": contrib, "waves": waves, "log": log,
+        "ind_index": ind_index,
     }
+
+
+@st.cache_data
+def load_independent(tag: str):
+    """加载某年独立回测包（与本地「开始日=该年1月1日」对齐）。"""
+    d = RESULTS / "independent" / str(tag)
+    if not (d / "nav.csv").exists():
+        return None
+    meta = json.loads((d / "meta.json").read_text(encoding="utf-8")) if (d / "meta.json").exists() else {}
+    nav = pd.read_csv(d / "nav.csv", parse_dates=["date"]).set_index("date").sort_index()
+    daily = (
+        pd.read_csv(d / "daily.csv", parse_dates=["date"]).sort_values("date")
+        if (d / "daily.csv").exists() else None
+    )
+    waves = pd.read_csv(d / "waves.csv") if (d / "waves.csv").exists() else None
+    contrib = pd.read_csv(d / "contrib.csv") if (d / "contrib.csv").exists() else None
+    log = (d / "log.txt").read_text(encoding="utf-8") if (d / "log.txt").exists() else ""
+    return {"meta": meta, "nav": nav, "daily": daily, "waves": waves, "contrib": contrib, "log": log}
+
+
+def match_independent(start_d, end_d, ind_index: list) -> str | None:
+    """若所选区间恰好是某年独立回测窗（1/1~年末或数据末日），返回 tag。"""
+    if not ind_index:
+        return None
+    s, e = pd.Timestamp(start_d).normalize(), pd.Timestamp(end_d).normalize()
+    for row in ind_index:
+        rs, re_ = pd.Timestamp(row["start"]).normalize(), pd.Timestamp(row["end"]).normalize()
+        # 允许结束日落在该独立窗末日（YTD / 全年）
+        if s == rs and e == re_:
+            return str(row["tag"])
+        # YTD：开始=该年1/1，结束=独立窗末日
+        if s.year == int(row["tag"]) and s.month == 1 and s.day == 1 and e == re_:
+            return str(row["tag"])
+    return None
 
 
 def calc_metrics(nav: pd.Series) -> dict:
@@ -241,8 +280,12 @@ dmin, dmax = nav_full.index.min().date(), nav_full.index.max().date()
 
 with st.sidebar:
     st.header("趋势策略优化版")
-    st.caption("预计算 · 侧栏改区间不重跑引擎")
+    st.caption("预计算 · 整年/YTD 用独立回测（对齐本地）；其它区间为全样本切片")
     st.caption(f"数据覆盖：{dmin} ~ {dmax}")
+    if bundle.get("ind_index"):
+        st.success(f"已含独立回测年：{', '.join(x['tag'] for x in bundle['ind_index'])}")
+    else:
+        st.warning("尚未导出 independent/；YTD 数字会与本地独立回测不一致")
 
     preset = st.selectbox(
         "快捷区间",
@@ -307,9 +350,32 @@ with st.sidebar:
     if not any(p.exists() for p in FONT_CANDIDATES):
         st.warning("未找到 fonts/SimHei.ttf，图中中文可能方框。")
 
-# 切片
-mask = (nav_full.index.date >= start_d) & (nav_full.index.date <= end_d)
-nav_slice = nav_full.loc[mask].copy()
+# 切片：优先命中「独立回测年」→ 与本地改开始日期对齐；否则全样本切片
+ind_tag = match_independent(start_d, end_d, bundle.get("ind_index") or [])
+mode_label = "连续净值切片（持仓承接上年）"
+active = None
+if ind_tag:
+    active = load_independent(ind_tag)
+    if active is not None:
+        mode_label = f"独立回测（{ind_tag}年 · 对齐本地开始日）"
+        nav_full_use = active["nav"]
+        # 独立窗已是完整区间，直接用
+        nav_slice = nav_full_use.copy()
+        daily_src = active.get("daily")
+        waves_src = active.get("waves")
+        contrib_src = active.get("contrib")
+        log_src = active.get("log") or ""
+    else:
+        ind_tag = None
+
+if not ind_tag:
+    mask = (nav_full.index.date >= start_d) & (nav_full.index.date <= end_d)
+    nav_slice = nav_full.loc[mask].copy()
+    daily_src = bundle["daily"]
+    waves_src = bundle["waves"]
+    contrib_src = bundle["contrib"]
+    log_src = bundle["log"]
+
 if len(nav_slice) < 5:
     st.error("所选区间交易日太少，请扩大日期范围。")
     st.stop()
@@ -324,9 +390,13 @@ if "daily_cost" in nav_slice.columns:
     # 手续费线：对该切片重新累加
     nav_df_plot["daily_cost"] = nav_slice["daily_cost"].fillna(0.0).values
 
-daily = bundle["daily"]
+daily = daily_src
 if daily is not None and not daily.empty:
-    dsub = daily[(daily["date"].dt.date >= start_d) & (daily["date"].dt.date <= end_d)].copy()
+    if ind_tag:
+        dsub = daily.copy()
+        dsub["date"] = pd.to_datetime(dsub["date"])
+    else:
+        dsub = daily[(daily["date"].dt.date >= start_d) & (daily["date"].dt.date <= end_d)].copy()
 else:
     dsub = pd.DataFrame()
 
@@ -334,21 +404,28 @@ avg_n = float((dsub["n_long"] + dsub["n_short"]).mean()) if not dsub.empty else 
 avg_long = float(dsub["long_exposure"].mean()) if not dsub.empty else meta.get("avg_long_exposure", 0)
 avg_short = float(dsub["short_exposure"].mean()) if not dsub.empty else meta.get("avg_short_exposure", 0)
 
-waves = bundle["waves"]
+waves = waves_src
 if waves is not None and not waves.empty and "Start_Date" in waves.columns:
     wsub = waves.copy()
     wsub["Start_Date"] = pd.to_datetime(wsub["Start_Date"])
     wsub["End_Date"] = pd.to_datetime(wsub["End_Date"])
-    wsub = wsub[(wsub["End_Date"].dt.date >= start_d) & (wsub["Start_Date"].dt.date <= end_d)]
+    if not ind_tag:
+        wsub = wsub[(wsub["End_Date"].dt.date >= start_d) & (wsub["Start_Date"].dt.date <= end_d)]
     avg_hold = float(wsub["Hold_Days"].mean()) if len(wsub) and "Hold_Days" in wsub.columns else 0.0
 else:
     wsub = pd.DataFrame()
-    avg_hold = float(meta.get("avg_hold_days") or 0)
+    avg_hold = float((active or {}).get("meta", {}).get("avg_hold_days") or meta.get("avg_hold_days") or 0)
 
 st.caption(
     f"{start_d} ~ {end_d} · 期末净值(归一) {m['final']:.4f} · "
-    f"涨跌停开 · 全市场3×ATR熔断常开 · 手续费 {meta.get('commission_bp', 1.5)}bp"
+    f"**{mode_label}** · 涨跌停开 · 全市场3×ATR熔断常开 · 手续费 {meta.get('commission_bp', 1.5)}bp"
 )
+if not ind_tag and start_d.year == end_d.year and start_d.month == 1 and start_d.day == 1:
+    st.warning(
+        "当前为「全样本连续净值」切片，持仓承接上年，"
+        "与本地把开始日改成该年1月1日的独立回测会有差异。"
+        "请先本地重跑 `export_cloud_results.py` 生成 independent/ 后推送，或选已导出的整年/YTD。"
+    )
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("多空独立累计总净收益", f"{m['tot']*100:.2f}%")
@@ -411,11 +488,11 @@ with t1:
 
 with t2:
     st.markdown("### 📊 品种贡献驾驶舱")
-    st.caption("先看谁贡献最大、谁拖累最大。云端为全样本导出贡献；换区间不重算贡献归因。")
-    cdf = bundle["contrib"]
+    st.caption("先看谁贡献最大、谁拖累最大。" + ("当前为该年独立回测贡献。" if ind_tag else "云端默认全样本贡献；命中独立年后用该年贡献。"))
+    cdf = contrib_src
     if cdf is not None and not cdf.empty:
         view = cdf.copy()
-        tot_ret = float(meta.get("metrics", {}).get("tot_pct", 0)) / 100.0
+        tot_ret = m["tot"] if ind_tag else float(meta.get("metrics", {}).get("tot_pct", 0)) / 100.0
         view["Contribution_pct"] = view["Contribution"] / tot_ret if tot_ret else 0
         view["方向"] = np.where(view["Contribution"] >= 0, "贡献", "拖累")
         pos_sum = view.loc[view["Contribution"] > 0, "Contribution"].sum()
@@ -449,7 +526,7 @@ with t3:
     quick = st.selectbox("快捷过滤", ["全部日志", "只看周汇总", "只看止损", "只看持仓", "只看亏损日"])
     # 优先用 daily 重建（含隔夜仓），否则裁切导出 log
     rebuilt = build_log_from_daily(dsub if not dsub.empty else daily, start_d, end_d)
-    raw = rebuilt if rebuilt else filter_log_by_dates(bundle["log"], start_d, end_d)
+    raw = rebuilt if rebuilt else filter_log_by_dates(log_src, start_d, end_d)
     lines = raw.splitlines()
     if quick == "只看周汇总":
         lines = [ln for ln in lines if ln.startswith("第") and "周：" in ln]

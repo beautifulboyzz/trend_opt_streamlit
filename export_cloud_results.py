@@ -170,7 +170,7 @@ def main():
         "_lb_stats": {"buy_blocked": 0, "sell_blocked": 0},
     }
 
-    print(f"=== backtest {START} ~ {end} ===", flush=True)
+    print(f"=== backtest full {START} ~ {end} ===", flush=True)
     res_nav, res_logs, _dbg, res_contrib, details = trend.run_long_short_strategy(
         df_p, df_atr_norm, df_l, df_o, df_h, df_atr_abs,
         df_vol, df_vol_ma, df_amount, df_liquidity, params,
@@ -189,6 +189,104 @@ def main():
             bs = idx_p.loc[res_nav.index[0]:res_nav.index[-1], col].dropna()
             if len(bs):
                 bench_s = (bs / bs.iloc[0]).reindex(res_nav.index).ffill()
+
+    def dump_window(tag: str, nav_df: pd.DataFrame, det: list, logs: list, contrib: dict, lb_stats: dict):
+        """写出独立回测窗口，供云端与本地「按开始日独立回测」对齐。"""
+        out_dir = RESULTS / "independent" / tag
+        out_dir.mkdir(parents=True, exist_ok=True)
+        nav_out = nav_df.reset_index()
+        if nav_out.columns[0] != "date":
+            nav_out = nav_out.rename(columns={nav_out.columns[0]: "date"})
+        nav_out.to_csv(out_dir / "nav.csv", index=False, encoding="utf-8-sig")
+
+        rows = []
+        for d in det or []:
+            stops = d.get("stops") or []
+            stop_txt = "；".join(
+                f"{s.get('asset', '')}({s.get('dir', '')}){s.get('reason', '')}" for s in stops
+            )
+            rows.append({
+                "date": pd.Timestamp(d["date"]),
+                "ret": float(d.get("ret", 0.0)),
+                "nav": float(d["nav"]) if d.get("nav") is not None else np.nan,
+                "long_exposure": float(d.get("long_exposure", 0.0) or 0.0),
+                "short_exposure": float(d.get("short_exposure", 0.0) or 0.0),
+                "gross_exposure": float(d.get("gross_exposure", 0.0) or 0.0),
+                "net_exposure": float(d.get("net_exposure", 0.0) or 0.0),
+                "margin_usage": float(d.get("margin_usage", 0.0) or 0.0),
+                "gap_long_pnl": float(d.get("gap_long_pnl", 0.0) or 0.0),
+                "gap_short_pnl": float(d.get("gap_short_pnl", 0.0) or 0.0),
+                "stop_count": len(stops),
+                "long_hold": hold_pipe(d, "start_hold_long"),
+                "short_hold": hold_pipe(d, "start_hold_short"),
+                "next_long": hold_pipe(d, "next_day_hold_long"),
+                "next_short": hold_pipe(d, "next_day_hold_short"),
+                "stops": stop_txt,
+                "banned": "|".join(str(x) for x in (d.get("banned_list") or [])),
+                "n_long": len([k for k, v in (d.get("start_hold_long") or {}).items() if v and v > 0]),
+                "n_short": len([k for k, v in (d.get("start_hold_short") or {}).items() if v and v > 0]),
+            })
+        daily_w = pd.DataFrame(rows).sort_values("date")
+        daily_w.to_csv(out_dir / "daily.csv", index=False, encoding="utf-8-sig")
+        (out_dir / "log.txt").write_text("\n".join(logs or []), encoding="utf-8")
+        cdf = pd.DataFrame(list((contrib or {}).items()), columns=["Asset", "Contribution"])
+        cdf.sort_values("Contribution", ascending=False, inplace=True)
+        cdf.to_csv(out_dir / "contrib.csv", index=False, encoding="utf-8-sig")
+        _, ws = trend.compute_holding_wave_stats(det, nav_df.index)
+        if ws is not None and not ws.empty:
+            wsc = ws.copy()
+            for c in ("Start_Date", "End_Date"):
+                if c in wsc.columns:
+                    wsc[c] = pd.to_datetime(wsc[c]).dt.strftime("%Y-%m-%d")
+            wsc.to_csv(out_dir / "waves.csv", index=False, encoding="utf-8-sig")
+        nav_s = nav_df["nav"].astype(float)
+        m = metrics(nav_s)
+        meta_w = {
+            "tag": tag,
+            "start": str(nav_s.index[0].date()),
+            "end": str(nav_s.index[-1].date()),
+            "mode": "independent",
+            "metrics": m,
+            "avg_long_exposure": float(daily_w["long_exposure"].mean()) if len(daily_w) else 0.0,
+            "avg_short_exposure": float(daily_w["short_exposure"].mean()) if len(daily_w) else 0.0,
+            "avg_daily_holdings": float((daily_w["n_long"] + daily_w["n_short"]).mean()) if len(daily_w) else 0.0,
+            "avg_hold_days": float(ws["Hold_Days"].mean()) if ws is not None and not ws.empty else 0.0,
+            "lb_stats": lb_stats or {},
+        }
+        (out_dir / "meta.json").write_text(
+            json.dumps(meta_w, ensure_ascii=False, indent=2), encoding="utf-8",
+        )
+        return meta_w
+
+    # —— 独立分年（对齐本地侧栏改开始日期）——
+    ind_index = []
+    for y in range(2020, pd.Timestamp(end).year + 1):
+        ys, ye = f"{y}-01-01", min(f"{y}-12-31", end)
+        if pd.Timestamp(ys) > pd.Timestamp(end):
+            continue
+        print(f"=== independent {y}: {ys} ~ {ye} ===", flush=True)
+        p = {**params, "start_date": ys, "end_date": ye,
+             "_lb_stats": {"buy_blocked": 0, "sell_blocked": 0}, "_lb_events": []}
+        nav_y, logs_y, _, contrib_y, det_y = trend.run_long_short_strategy(
+            df_p, df_atr_norm, df_l, df_o, df_h, df_atr_abs,
+            df_vol, df_vol_ma, df_amount, df_liquidity, p,
+        )
+        if nav_y is None or nav_y.empty:
+            continue
+        mw = dump_window(str(y), nav_y, det_y, logs_y, contrib_y, dict(p.get("_lb_stats") or {}))
+        ind_index.append({
+            "tag": str(y),
+            "start": mw["start"],
+            "end": mw["end"],
+            "tot_pct": mw["metrics"]["tot_pct"],
+            "sharpe": mw["metrics"]["sharpe"],
+            "final": mw["metrics"]["final"],
+        })
+        print(f"  {y}: nav={mw['metrics']['final']:.4f} sh={mw['metrics']['sharpe']:.3f}", flush=True)
+
+    (RESULTS / "independent" / "index.json").write_text(
+        json.dumps(ind_index, ensure_ascii=False, indent=2), encoding="utf-8",
+    )
 
     nav_out = res_nav.copy()
     nav_out = nav_out.reset_index().rename(columns={"index": "date"})
@@ -310,6 +408,8 @@ def main():
         "global_crash_events": n_global,
         "lb_stats": lb,
         "bench_name": BENCH_NAME if bench_s is not None else None,
+        "metric_note": "全样本为连续回测；results/independent/{年}/ 为各年独立回测（对齐本地改开始日期）",
+        "independent_years": [x["tag"] for x in ind_index],
         "exported_at": pd.Timestamp.now().isoformat(timespec="seconds"),
     }
     (RESULTS / "meta.json").write_text(
