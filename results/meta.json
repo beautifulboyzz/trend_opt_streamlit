@@ -1,0 +1,46 @@
+{
+  "product": "趋势策略优化版",
+  "source": "D:\\ALL\\趋势策略优化版.py",
+  "start": "2020-01-01",
+  "end": "2026-07-27",
+  "asset_folder": "D:\\数据集文件\\期货全品种日线数据",
+  "use_limit_board": true,
+  "commission_bp": 1.5,
+  "global_atr_crash": true,
+  "global_atr_crash_k": 3.0,
+  "use_regime_gate": true,
+  "use_short_symmetric_filter": true,
+  "use_legacy_pct_stop": true,
+  "adv_unconditional_high_dd": true,
+  "hold_num": 4,
+  "max_per_sector": 2,
+  "periods": [
+    5,
+    10,
+    20,
+    60
+  ],
+  "ma": 60,
+  "target_volatility": 0.25,
+  "metrics": {
+    "tot_pct": 411.7956045235243,
+    "ann_pct": 28.234722450896733,
+    "sharpe": 1.5444198751186318,
+    "dd_pct": -21.310617285457177,
+    "calmar": 1.32491340221124,
+    "win_rate": 0.5314465408805031,
+    "final": 5.117956045235243,
+    "days": 1591
+  },
+  "avg_long_exposure": 0.5610011678884916,
+  "avg_short_exposure": 0.42005541243369554,
+  "avg_daily_holdings": 5.4274041483343805,
+  "avg_hold_days": 3.9420620437956204,
+  "global_crash_events": 224,
+  "lb_stats": {
+    "buy_blocked": 38,
+    "sell_blocked": 26
+  },
+  "bench_name": "文华商品",
+  "exported_at": "2026-07-28T14:28:40"
+}
