@@ -6,7 +6,7 @@
 UI 对齐本地「趋势策略优化版.py」：指标卡 + 九个 Tab（白盒 Tab 为说明页）。
 
 本地：
-  streamlit run app.py --server.port 8507
+  streamlit run app.py --server.port 8506
 """
 from __future__ import annotations
 
