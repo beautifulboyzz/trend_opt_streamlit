@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+# 勿上传全市场行情；只保留 results/ 与 fonts/
+data/
+*.parquet
