@@ -31,12 +31,20 @@ trend_opt_streamlit/
     log.txt
 ```
 
-本地预览：
+本地预览（8506，8507 留给 CSRE 日频看板）：
 
 ```bash
 cd D:\ALL\trend_opt_streamlit
-streamlit run app.py --server.port 8507
+streamlit run app.py --server.port 8506
 ```
+
+CSRE 截面残差动量（Push final）在同一仓库的 `csre_dashboard/`，端口 8507：
+
+```powershell
+streamlit run csre_dashboard/streamlit_app.py --server.port 8507
+```
+
+说明与数据路径见 `csre_dashboard/README.md`。
 
 ## 推到 GitHub → Streamlit Cloud
 
